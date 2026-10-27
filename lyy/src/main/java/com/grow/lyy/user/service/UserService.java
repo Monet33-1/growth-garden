@@ -9,8 +9,6 @@ import com.grow.lyy.user.entity.User;
 public interface UserService {
 
 
-    void register(User user);
-
     User getById(Long id);
 
     User login(

@@ -4,7 +4,6 @@ package com.grow.lyy.user.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.grow.lyy.common.jwt.JwtUtil;
 import com.grow.lyy.common.exception.BusinessException;
-import com.grow.lyy.garden.service.GardenService;
 import com.grow.lyy.user.dto.LoginDTO;
 import com.grow.lyy.user.dto.LoginVO;
 import com.grow.lyy.user.entity.User;
@@ -28,32 +27,8 @@ public class UserServiceImpl
 
     private final UserMapper userMapper;
 
-    private final GardenService gardenService;
-
 
     private final BCryptPasswordEncoder passwordEncoder;
-
-
-
-    @Override
-    public void register(User user){
-
-
-        String encode =
-                passwordEncoder.encode(
-                        user.getPassword()
-                );
-
-
-        user.setPassword(encode);
-
-
-        userMapper.insert(user);
-
-        gardenService.createGarden(user.getId());
-    }
-
-
 
 
     @Override

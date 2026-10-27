@@ -2,7 +2,6 @@ package com.grow.lyy.user.service.impl;
 
 import com.grow.lyy.common.exception.BusinessException;
 import com.grow.lyy.common.jwt.JwtUtil;
-import com.grow.lyy.garden.service.GardenService;
 import com.grow.lyy.user.entity.User;
 import com.grow.lyy.user.mapper.UserMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +26,7 @@ class UserServiceImplPasswordTest {
 
     @BeforeEach
     void setUp() {
-        userService = new UserServiceImpl(mock(JwtUtil.class), userMapper, mock(GardenService.class), encoder);
+        userService = new UserServiceImpl(mock(JwtUtil.class), userMapper, encoder);
         user = new User();
         user.setId(7L);
         user.setPassword(encoder.encode("garden-old-123"));

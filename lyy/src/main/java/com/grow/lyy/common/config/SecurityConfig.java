@@ -52,7 +52,6 @@ public class SecurityConfig {
                                         "/styles.css",
                                         "/src/**",
                                         "/images/**",
-                                        "/user/register",
                                         "/user/login",
                                         "/admin/letters",
                                         "/letter/admin/login"

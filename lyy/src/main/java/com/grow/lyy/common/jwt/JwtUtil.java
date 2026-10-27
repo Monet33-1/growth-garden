@@ -3,6 +3,7 @@ package com.grow.lyy.common.jwt;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 
@@ -15,8 +16,8 @@ import java.util.Date;
 public class JwtUtil {
 
 
-    private final String SECRET =
-            "growthgardensecretkey2026growthgarden";
+    @Value("${jwt.secret}")
+    private String secret;
 
 
     private final long EXPIRATION =
@@ -27,7 +28,7 @@ public class JwtUtil {
     private Key getKey(){
 
         return Keys.hmacShaKeyFor(
-                SECRET.getBytes(StandardCharsets.UTF_8)
+                secret.getBytes(StandardCharsets.UTF_8)
         );
 
     }

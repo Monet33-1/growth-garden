@@ -30,5 +30,8 @@ build/
 !**/src/test/**/build/
 .idea/
 application-local.properties
+.env
+*.log
+db/export/
 ### VS Code ###
 .vscode/

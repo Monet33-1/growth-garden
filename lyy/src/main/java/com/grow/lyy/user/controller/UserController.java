@@ -19,15 +19,6 @@ public class UserController {
 
     private final UserService userService;
 
-    @PostMapping("/register")
-    public String register(
-            @RequestBody User user
-    ){
-
-        userService.register(user);
-
-        return "success";
-    }
     @PostMapping("/login")
     public LoginVO login(
             @RequestBody LoginDTO dto

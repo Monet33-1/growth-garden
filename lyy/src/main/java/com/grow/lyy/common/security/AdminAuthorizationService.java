@@ -1,5 +1,6 @@
 package com.grow.lyy.common.security;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -16,15 +17,28 @@ import java.util.Base64;
 @Component
 public class AdminAuthorizationService {
 
-    private static final String ADMIN_USERNAME = "Threesheep";
-    private static final byte[] PASSWORD_SALT = Base64.getDecoder().decode("VNFpsqaCwJW8NJ9DJ/UH8Q==");
-    private static final byte[] PASSWORD_HASH = Base64.getDecoder().decode("c9YpzL351G2V1BsN6ji5yclDEW8yhyLlW8ZzVSqRVdk=");
-    private static final int PASSWORD_ITERATIONS = 200_000;
-
     private final AdminSessionService adminSessionService;
 
-    public AdminAuthorizationService(AdminSessionService adminSessionService) {
+    private final String adminUsername;
+
+    private final byte[] passwordSalt;
+
+    private final byte[] passwordHash;
+
+    private final int passwordIterations;
+
+    public AdminAuthorizationService(
+            AdminSessionService adminSessionService,
+            @Value("${app.admin.username}") String adminUsername,
+            @Value("${app.admin.password-salt}") String passwordSalt,
+            @Value("${app.admin.password-hash}") String passwordHash,
+            @Value("${app.admin.password-iterations:200000}") int passwordIterations
+    ) {
         this.adminSessionService = adminSessionService;
+        this.adminUsername = adminUsername;
+        this.passwordSalt = Base64.getDecoder().decode(passwordSalt);
+        this.passwordHash = Base64.getDecoder().decode(passwordHash);
+        this.passwordIterations = passwordIterations;
     }
 
     public String login(String username, String password) {
@@ -45,17 +59,17 @@ public class AdminAuthorizationService {
 
     private boolean matchesUsername(String username) {
         return MessageDigest.isEqual(
-                ADMIN_USERNAME.getBytes(StandardCharsets.UTF_8),
+                adminUsername.getBytes(StandardCharsets.UTF_8),
                 username.getBytes(StandardCharsets.UTF_8));
     }
 
     private boolean matchesPassword(String password) {
-        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), PASSWORD_SALT, PASSWORD_ITERATIONS, PASSWORD_HASH.length * 8);
+        PBEKeySpec spec = new PBEKeySpec(password.toCharArray(), passwordSalt, passwordIterations, passwordHash.length * 8);
         try {
             byte[] candidate = SecretKeyFactory.getInstance("PBKDF2WithHmacSHA256")
                     .generateSecret(spec)
                     .getEncoded();
-            return MessageDigest.isEqual(PASSWORD_HASH, candidate);
+            return MessageDigest.isEqual(passwordHash, candidate);
         } catch (GeneralSecurityException e) {
             throw new IllegalStateException("管理员密码校验暂不可用", e);
         } finally {
