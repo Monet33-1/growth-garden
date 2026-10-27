@@ -1,0 +1,27 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1920 1080" preserveAspectRatio="xMidYMid slice">
+  <defs>
+    <linearGradient id="sky" x2="0" y2="1"><stop stop-color="#071225" offset=""/><stop offset=".52" stop-color="#17274a"/><stop offset=".78" stop-color="#514465"/><stop offset="1" stop-color="#1b2938"/></linearGradient>
+    <linearGradient id="far" x2="0" y2="1"><stop stop-color="#263653" offset=""/><stop offset="1" stop-color="#17263b"/></linearGradient>
+    <linearGradient id="near" x2="0" y2="1"><stop stop-color="#182a3a" offset=""/><stop offset="1" stop-color="#0c1a22"/></linearGradient>
+    <linearGradient id="water" x2="0" y2="1"><stop stop-color="#596078" stop-opacity=".72" offset=""/><stop offset="1" stop-color="#1c2b3c" stop-opacity=".22"/></linearGradient>
+    <radialGradient id="dusk"><stop stop-color="#c28c86" stop-opacity=".58" offset=""/><stop offset="1" stop-color="#c28c86" stop-opacity="0"/></radialGradient>
+    <radialGradient id="sproutGlow"><stop stop-color="#c6d58e" stop-opacity=".56" offset=""/><stop offset="1" stop-color="#c6d58e" stop-opacity="0"/></radialGradient>
+  </defs>
+  <path fill="url(#sky)" d="M0 0h1920v1080H0z"/>
+  <ellipse cx="1080" cy="740" rx="820" ry="330" fill="url(#dusk)"/>
+  <g fill="#e8edf5">
+    <circle cx="92" cy="113" r="1.5" opacity=".74"/><circle cx="171" cy="241" r="1" opacity=".72"/><circle cx="248" cy="79" r="1.2" opacity=".68"/><circle cx="334" cy="177" r="1.1" opacity=".88"/><circle cx="427" cy="103" r="1.4" opacity=".7"/><circle cx="506" cy="237" r="1" opacity=".82"/><circle cx="579" cy="142" r="1.2" opacity=".72"/><circle cx="663" cy="73" r="1" opacity=".84"/><circle cx="752" cy="188" r="1.3" opacity=".77"/><circle cx="841" cy="112" r="1" opacity=".82"/>
+    <circle cx="930" cy="208" r="1.3" opacity=".7"/><circle cx="1005" cy="96" r="1" opacity=".88"/><circle cx="1096" cy="177" r="1.2" opacity=".68"/><circle cx="1188" cy="67" r="1" opacity=".76"/><circle cx="1281" cy="211" r="1.3" opacity=".86"/><circle cx="1376" cy="123" r="1" opacity=".82"/><circle cx="1453" cy="250" r="1.1" opacity=".68"/><circle cx="1546" cy="88" r="1.3" opacity=".84"/><circle cx="1642" cy="186" r="1" opacity=".71"/><circle cx="1752" cy="104" r="1.3" opacity=".83"/><circle cx="1840" cy="223" r="1" opacity=".75"/>
+    <circle cx="61" cy="332" r="1" opacity=".8"/><circle cx="215" cy="389" r="1.2" opacity=".73"/><circle cx="381" cy="307" r="1" opacity=".86"/><circle cx="548" cy="421" r="1.2" opacity=".78"/><circle cx="709" cy="330" r="1" opacity=".68"/><circle cx="882" cy="401" r="1.3" opacity=".82"/><circle cx="1048" cy="315" r="1" opacity=".78"/><circle cx="1225" cy="412" r="1.1" opacity=".74"/><circle cx="1391" cy="337" r="1.3" opacity=".87"/><circle cx="1574" cy="429" r="1" opacity=".71"/><circle cx="1747" cy="344" r="1.2" opacity=".82"/><circle cx="1882" cy="403" r="1" opacity=".72"/>
+  </g>
+  <g fill="#f3d9ad" opacity=".78"><circle cx="313" cy="274" r="2"/><circle cx="313" cy="274" r="12" opacity=".09"/><circle cx="965" cy="151" r="1.8"/><circle cx="965" cy="151" r="10" opacity=".09"/><circle cx="1679" cy="296" r="1.7"/></g>
+  <path fill="#f2d9b3" d="M1606 126a47 47 0 1 0 58 68 42 42 0 0 1-58-68Z" opacity=".86"/>
+  <path fill="#172741" d="M0 595 148 507l102 51 139-145 134 113 157-92 151 132 135-81 111 89 139-119 136 111 123-65 149 111 96-76v444H0Z"/>
+  <path fill="url(#far)" d="m0 691 177-97 125 58 151-115 147 119 150-72 127 117 180-105 136 104 129-73 156 92 142-91v452H0Z"/>
+  <path fill="url(#near)" d="m0 762 137-59 124 62 142-86 154 82 155-61 141 67 162-73 140 85 168-70 147 74 158-65 192 82v280H0Z"/>
+  <path fill="url(#water)" d="M550 796c164-40 326-31 474-12 167 21 326 13 521-23l375 37v116H0v-36c198 2 375-32 550-82Z"/>
+  <g stroke="#d9c6b0" stroke-opacity=".14" stroke-width="2"><path d="M770 836h412M893 856h583M1137 820h273M624 875h836M1008 896h525"/><path d="M839 847h190M1244 878h264" stroke-opacity=".1"/></g>
+  <path fill="#0a1718" d="M0 929c155-65 274-61 402-16 116 42 229 24 343-20 126-48 236-48 367 1 171 65 312 43 463-8 134-45 238-37 345 4v190H0Z"/>
+  <ellipse cx="592" cy="952" rx="160" ry="105" fill="url(#sproutGlow)"/>
+  <g fill="#0b1718" opacity=".9"><path d="M91 1062c20-86 40-126 65-177 4 61 1 117-8 177ZM139 1062c16-61 34-98 63-135-9 58-18 98-30 135ZM1790 1080c-3-84 9-145 30-213 12 63 12 134 7 213ZM1841 1080c6-55 26-109 53-150-9 60-17 111-26 150Z"/></g>
+</svg>
