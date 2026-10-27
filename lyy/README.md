@@ -105,8 +105,30 @@ Build the image:
 docker build -t growth-garden .
 ```
 
+### VPS with Docker Compose
+
+Copy the environment template and fill it in:
+
+```bash
+cp .env.example .env
+```
+
+Upload the private seed files (`db/export/seed-*.sql`) to the same path on the
+server, then start both MySQL and the application:
+
+```bash
+docker compose up -d --build
+docker compose logs -f app
+```
+
+Open `http://SERVER_IP:8080`.
+
+The MySQL init scripts run only when the `mysql-data` volume is first created.
+To recreate the database from scratch, remove the volume with
+`docker compose down -v` (this deletes all data).
+
 Import the generated SQL files into the production database before the first
-login:
+login when using an external MySQL:
 
 ```bash
 mysql -h "$DB_HOST" -P "$DB_PORT" -u "$DB_USER" -p "$DB_NAME" < db/schema.sql
