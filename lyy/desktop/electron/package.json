@@ -1,6 +1,6 @@
 {
   "name": "growth-garden-desktop",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "private": true,
   "description": "Growth Garden Windows desktop shell",
   "main": "main.js",
@@ -25,6 +25,7 @@
     },
     "files": [
       "main.js",
+      "preload.js",
       "package.json",
       "build/icon.png"
     ],

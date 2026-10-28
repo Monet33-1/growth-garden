@@ -1,10 +1,11 @@
-import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=25';
-import { clearSession, getToken, saveSession } from './session.js?v=25';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=26';
+import { clearSession, getToken, saveSession } from './session.js?v=26';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
 let homeDiaries = [];
 let homeDiaryListLoaded = false;
+let accountUpdateDispose = null;
 
 function navigate(route) {
   window.history.pushState({}, '', route);
@@ -1482,6 +1483,8 @@ async function showAdminLetters() {
 }
 
 function showAccountManagement() {
+  accountUpdateDispose?.();
+  accountUpdateDispose = null;
   const app = document.getElementById('app');
   app.dataset.view = 'account';
   page.className = 'page page--account';
@@ -1509,6 +1512,14 @@ function showAccountManagement() {
         '<label class="account-ai-entry__field"><span>新的 API Key</span><input id="ai-key-input" type="password" maxlength="200" autocomplete="off" placeholder="sk-..." /></label>' +
         '<p class="account-ai-entry__message" id="ai-key-message" role="status" aria-live="polite"></p>' +
         '<div class="account-ai-entry__actions"><button class="account-ai-entry__save" id="save-ai-key" type="button">保存 Key</button><button class="account-ai-entry__clear" id="clear-ai-key" type="button">清除 Key</button></div>' +
+      '</section>' +
+      '<section class="account-update-entry" id="account-update-entry" hidden>' +
+        '<p class="account-panel__eyebrow">APP UPDATE</p>' +
+        '<h2>应用更新</h2>' +
+        '<p class="account-update-entry__status" id="update-status">正在读取版本…</p>' +
+        '<div class="account-update-entry__progress" id="update-progress" hidden><div class="account-update-entry__bar"><span id="update-bar"></span></div><p id="update-percent"></p></div>' +
+        '<p class="account-update-entry__message" id="update-message" role="status" aria-live="polite"></p>' +
+        '<div class="account-update-entry__actions"><button class="account-update-entry__action" id="update-action" type="button">检查更新</button><button class="account-update-entry__install" id="update-install" type="button" hidden>重启并安装</button></div>' +
       '</section>' +
     '</main>';
 
@@ -1647,6 +1658,122 @@ function showAccountManagement() {
     renderAiStatus(null);
     aiMessage.textContent = '暂时无法读取 Key 状态，请稍后刷新。';
   });
+
+  const updateEntry = document.getElementById('account-update-entry');
+  const updateStatus = document.getElementById('update-status');
+  const updateProgress = document.getElementById('update-progress');
+  const updateBar = document.getElementById('update-bar');
+  const updatePercent = document.getElementById('update-percent');
+  const updateMessage = document.getElementById('update-message');
+  const updateAction = document.getElementById('update-action');
+  const updateInstall = document.getElementById('update-install');
+  let updateActionMode = 'check';
+
+  if (window.growthGarden?.update) {
+    updateEntry.hidden = false;
+
+    const formatSize = (bytes) => {
+      if (!Number.isFinite(bytes) || bytes <= 0) return '';
+      return `${(bytes / 1024 / 1024).toFixed(1)} MB`;
+    };
+
+    const renderUpdateState = (state = {}) => {
+      if (!document.body.contains(updateStatus)) return;
+      const phase = state.phase || 'idle';
+      updateMessage.textContent = '';
+      updateInstall.hidden = true;
+      updateAction.hidden = false;
+      updateAction.disabled = false;
+      updateAction.textContent = '检查更新';
+      updateActionMode = 'check';
+      updateProgress.hidden = true;
+
+      if (state.currentVersion) {
+        updateStatus.textContent = `当前版本 ${state.currentVersion}`;
+      }
+
+      if (phase === 'checking') {
+        updateStatus.textContent = '正在检查更新…';
+        updateAction.disabled = true;
+        updateAction.textContent = '正在检查…';
+        return;
+      }
+
+      if (phase === 'available') {
+        updateStatus.textContent = `发现新版本 v${state.version}`;
+        updateAction.textContent = '下载更新';
+        updateActionMode = 'download';
+        if (state.releaseNotes) updateMessage.textContent = state.releaseNotes;
+        return;
+      }
+
+      if (phase === 'downloading') {
+        const percent = Math.max(0, Math.min(100, Number(state.percent) || 0));
+        updateStatus.textContent = `正在下载 v${state.version}…`;
+        updateAction.disabled = true;
+        updateAction.textContent = '正在下载…';
+        updateProgress.hidden = false;
+        updateBar.style.width = `${percent}%`;
+        const size = formatSize(state.transferred);
+        const total = formatSize(state.total);
+        updatePercent.textContent = size && total
+          ? `${percent}% · ${size} / ${total}`
+          : `${percent}%`;
+        return;
+      }
+
+      if (phase === 'ready') {
+        updateStatus.textContent = `v${state.version} 已下载，等待安装。`;
+        updateAction.hidden = true;
+        updateInstall.hidden = false;
+        return;
+      }
+
+      if (phase === 'installing') {
+        updateStatus.textContent = '正在重启并安装更新…';
+        updateAction.disabled = true;
+        updateAction.textContent = '正在安装…';
+        return;
+      }
+
+      if (phase === 'error') {
+        updateStatus.textContent = '更新没有完成。';
+        updateMessage.textContent = state.message || '请稍后重试。';
+        updateAction.textContent = '重试';
+        updateActionMode = state.retry === 'download' ? 'download' : 'check';
+        return;
+      }
+
+      if (state.message) updateMessage.textContent = state.message;
+    };
+
+    updateAction.addEventListener('click', async () => {
+      updateAction.disabled = true;
+      updateMessage.textContent = '';
+      try {
+        const next = updateActionMode === 'download'
+          ? await window.growthGarden.update.download()
+          : await window.growthGarden.update.check();
+        if (next) renderUpdateState(next);
+      } catch (error) {
+        updateMessage.textContent = error.message || '更新操作没有完成，请稍后再试。';
+        updateAction.disabled = false;
+      }
+    });
+
+    updateInstall.addEventListener('click', () => {
+      updateInstall.disabled = true;
+      updateStatus.textContent = '正在重启并安装更新…';
+      void window.growthGarden.update.install();
+    });
+
+    accountUpdateDispose = window.growthGarden.update.onState(renderUpdateState);
+    void window.growthGarden.update.getState()
+      .then(renderUpdateState)
+      .catch(() => {
+        updateStatus.textContent = '更新组件暂时不可用。';
+      });
+  }
 }
 
 function renderRoute() {

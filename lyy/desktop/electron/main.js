@@ -1,4 +1,4 @@
-const { app, BrowserWindow, dialog, shell } = require('electron');
+const { app, BrowserWindow, dialog, ipcMain, shell } = require('electron');
 const { spawn, spawnSync } = require('child_process');
 const fs = require('fs');
 const http = require('http');
@@ -9,10 +9,14 @@ app.setName('GrowthGarden');
 const BACKEND_PORT = 18080;
 const BACKEND_URL = `http://127.0.0.1:${BACKEND_PORT}/garden`;
 const JAR_NAME = 'lyy-0.0.1-SNAPSHOT.jar';
+const UPDATE_CHECK_TIMEOUT_MS = 30000;
 
 let mainWindow = null;
 let backend = null;
 let quitting = false;
+let autoUpdater = null;
+let updateInfo = null;
+let updateState = { phase: 'idle' };
 
 function log(message) {
   try {
@@ -144,6 +148,7 @@ function createWindow() {
     webPreferences: {
       contextIsolation: true,
       nodeIntegration: false,
+      preload: path.join(__dirname, 'preload.js'),
     },
   });
 
@@ -175,68 +180,162 @@ function createWindow() {
   });
 }
 
-function setupUpdater() {
-  if (!app.isPackaged) return;
+function publishUpdate(next) {
+  updateState = {
+    ...next,
+    currentVersion: app.getVersion(),
+  };
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send('update:state', updateState);
+  }
+}
 
-  let autoUpdater;
+function updaterErrorMessage(error, retry) {
+  return {
+    phase: 'error',
+    message: error instanceof Error ? error.message : String(error),
+    retry,
+  };
+}
+
+async function checkForUpdatesWithTimeout() {
+  let timer;
+  const timeout = new Promise((_, reject) => {
+    timer = setTimeout(
+      () => reject(new Error('检查更新超时，请稍后重试。')),
+      UPDATE_CHECK_TIMEOUT_MS
+    );
+  });
+  try {
+    return await Promise.race([autoUpdater.checkForUpdates(), timeout]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+function configureUpdater() {
+  ipcMain.handle('update:get-state', () => updateState);
+
+  ipcMain.handle('update:check', async () => {
+    if (!app.isPackaged) {
+      publishUpdate({ phase: 'error', message: '开发模式不支持自动更新。', retry: 'check' });
+      return updateState;
+    }
+    if (!autoUpdater) {
+      publishUpdate({ phase: 'error', message: '更新组件没有加载。', retry: 'check' });
+      return updateState;
+    }
+    if (['checking', 'downloading', 'installing'].includes(updateState.phase)) {
+      return updateState;
+    }
+    publishUpdate({ phase: 'checking' });
+    try {
+      await checkForUpdatesWithTimeout();
+    } catch (error) {
+      log(`update check failed: ${error.message}`);
+      publishUpdate(updaterErrorMessage(error, 'check'));
+    }
+    return updateState;
+  });
+
+  ipcMain.handle('update:download', async () => {
+    if (!autoUpdater || !updateInfo) {
+      publishUpdate({ phase: 'error', message: '没有可下载的更新。', retry: 'check' });
+      return updateState;
+    }
+    if (['downloading', 'installing'].includes(updateState.phase)) {
+      return updateState;
+    }
+    publishUpdate({ phase: 'downloading', version: updateInfo.version, percent: 0 });
+    try {
+      await autoUpdater.downloadUpdate();
+    } catch (error) {
+      log(`update download failed: ${error.message}`);
+      publishUpdate(updaterErrorMessage(error, 'download'));
+    }
+    return updateState;
+  });
+
+  ipcMain.handle('update:install', () => {
+    if (!autoUpdater || updateState.phase !== 'ready') {
+      return updateState;
+    }
+    publishUpdate({ phase: 'installing', version: updateInfo?.version });
+    quitting = true;
+    autoUpdater.quitAndInstall(false, true);
+    return updateState;
+  });
+
+  if (!app.isPackaged) {
+    return;
+  }
+
   try {
     ({ autoUpdater } = require('electron-updater'));
   } catch (error) {
     log(`electron-updater unavailable: ${error.message}`);
+    publishUpdate({ phase: 'error', message: '更新组件没有加载。', retry: 'check' });
     return;
   }
 
   autoUpdater.autoDownload = false;
-  autoUpdater.on('error', (error) => log(`updater error: ${error.message}`));
+  autoUpdater.autoInstallOnAppQuit = false;
+  autoUpdater.logger = {
+    info: (message) => log(`updater: ${message}`),
+    warn: (message) => log(`updater warn: ${message}`),
+    error: (message) => log(`updater error: ${message}`),
+  };
 
-  autoUpdater.on('update-available', async (info) => {
-    if (!mainWindow) return;
-    const result = await dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '发现新版本',
-      message: `Growth Garden ${info.version} 已经准备好。`,
-      detail: info.releaseNotes
-        ? String(info.releaseNotes)
-        : '可以现在下载，下载完成后重新启动即可更新。',
-      buttons: ['稍后', '下载更新'],
-      defaultId: 1,
-      cancelId: 0,
+  autoUpdater.on('checking-for-update', () => {
+    publishUpdate({ phase: 'checking' });
+  });
+
+  autoUpdater.on('update-available', (info) => {
+    updateInfo = info;
+    publishUpdate({
+      phase: 'available',
+      version: info.version,
+      releaseNotes: info.releaseNotes ? String(info.releaseNotes) : '',
     });
-    if (result.response === 1) {
-      autoUpdater.downloadUpdate().catch((error) => {
-        log(`download failed: ${error.message}`);
-        dialog.showErrorBox('更新下载失败', error.message);
-      });
-    }
+  });
+
+  autoUpdater.on('update-not-available', () => {
+    updateInfo = null;
+    publishUpdate({ phase: 'idle', message: '已经是最新版本。' });
   });
 
   autoUpdater.on('download-progress', (progress) => {
-    if (mainWindow) {
-      mainWindow.setProgressBar(progress.percent / 100);
-    }
+    if (!updateInfo) return;
+    if (mainWindow) mainWindow.setProgressBar(progress.percent / 100);
+    publishUpdate({
+      phase: 'downloading',
+      version: updateInfo.version,
+      percent: Math.floor(progress.percent),
+      transferred: progress.transferred,
+      total: progress.total,
+      bytesPerSecond: progress.bytesPerSecond,
+    });
   });
 
-  autoUpdater.on('update-downloaded', async (info) => {
+  autoUpdater.on('update-downloaded', (info) => {
+    updateInfo = info;
     if (mainWindow) mainWindow.setProgressBar(-1);
-    const result = await dialog.showMessageBox(mainWindow, {
-      type: 'info',
-      title: '更新已下载',
-      message: `Growth Garden ${info.version} 已准备好。`,
-      detail: '点击“现在重启”完成更新。',
-      buttons: ['稍后', '现在重启'],
-      defaultId: 1,
-      cancelId: 0,
-    });
-    if (result.response === 1) {
-      quitting = true;
-      autoUpdater.quitAndInstall();
-    }
+    publishUpdate({ phase: 'ready', version: info.version });
+  });
+
+  autoUpdater.on('error', (error) => {
+    log(`updater error: ${error.message}`);
+    if (mainWindow) mainWindow.setProgressBar(-1);
+    const retry = updateState.phase === 'downloading' ? 'download' : 'check';
+    publishUpdate(updaterErrorMessage(error, retry));
   });
 
   setTimeout(() => {
-    autoUpdater.checkForUpdates().catch((error) => {
-      log(`update check failed: ${error.message}`);
-    });
+    if (updateState.phase === 'idle') {
+      checkForUpdatesWithTimeout().catch((error) => {
+        log(`update check failed: ${error.message}`);
+      });
+    }
   }, 5000);
 }
 
@@ -247,7 +346,6 @@ async function start() {
     startBackend();
     await waitForBackend();
     await mainWindow.loadURL(BACKEND_URL);
-    setupUpdater();
   } catch (error) {
     log(`startup failed: ${error.message}`);
     dialog.showErrorBox(
@@ -272,6 +370,8 @@ if (!app.requestSingleInstanceLock()) {
 
   app.whenReady().then(() => {
     app.setAppUserModelId('com.grow.lyy.desktop');
+    updateState = { phase: 'idle', currentVersion: app.getVersion() };
+    configureUpdater();
     start();
   });
 }
