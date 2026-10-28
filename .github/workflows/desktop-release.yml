@@ -75,7 +75,8 @@ jobs:
           TAG_NAME: ${{ github.ref_name }}
         run: |
           $version = $env:TAG_NAME.TrimStart('v')
-          npm version $version --no-git-tag-version
+          npm pkg set "version=$version"
+          Write-Host "Building desktop version $version"
 
       - name: Build and publish installer
         working-directory: lyy/desktop/electron
