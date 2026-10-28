@@ -307,7 +307,7 @@ button { -webkit-tap-highlight-color: transparent; }
 .page--account { position: absolute; z-index: 6; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; overflow: auto; border: 0; border-radius: 0; background: rgba(3, 10, 21, .2); color: #f2e8d1; backdrop-filter: none; -webkit-backdrop-filter: none; animation: none; }
 .account-page__header { position: absolute; z-index: 5; top: 0; right: 0; left: 0; display: flex; align-items: center; gap: 14px; padding: 23px clamp(20px, 3vw, 48px); color: #f0e5cb; text-shadow: 0 2px 12px rgba(0,0,0,.72); }
 .account-page__brand { color: #f1e4c8; font-family: 'Palatino Linotype', 'Book Antiqua', Georgia, serif; font-size: clamp(20px, 1.8vw, 27px); }
-.account-panel { position: absolute; top: 50%; left: 50%; width: min(460px, calc(100% - 36px)); padding: clamp(26px, 4vw, 38px); transform: translate(-50%, -43%); border: 1px solid rgba(225, 232, 245, .2); border-radius: 16px; background: linear-gradient(145deg, rgba(12, 28, 47, .75), rgba(10, 22, 38, .69)); box-shadow: 0 18px 58px rgba(2, 6, 16, .24); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.account-panel { position: absolute; top: 50%; left: 50%; width: min(460px, calc(100% - 36px)); max-height: calc(100% - 90px); padding: clamp(26px, 4vw, 38px); overflow-y: auto; transform: translate(-50%, -43%); border: 1px solid rgba(225, 232, 245, .2); border-radius: 16px; background: linear-gradient(145deg, rgba(12, 28, 47, .75), rgba(10, 22, 38, .69)); box-shadow: 0 18px 58px rgba(2, 6, 16, .24); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
 .account-panel__eyebrow { margin: 0 0 10px; color: rgba(227, 204, 156, .74); font-family: Georgia, serif; font-size: 10px; letter-spacing: .19em; }
 .account-panel h1 { margin: 0; color: #f3e7d0; font-family: 'Songti SC', 'STSong', 'SimSun', serif; font-size: 28px; font-weight: 400; letter-spacing: .09em; }
 .account-panel__lead { margin: 9px 0 26px; color: rgba(238, 232, 219, .66); font-size: 13px; }
@@ -324,6 +324,11 @@ button { -webkit-tap-highlight-color: transparent; }
 .account-password__submit { border: 1px solid rgba(235, 216, 177, .42); background: rgba(221, 198, 151, .14); color: #f2e5c8; transition: background 160ms ease, border-color 160ms ease; }
 .account-password__submit:hover:not(:disabled) { border-color: rgba(235, 216, 177, .65); background: rgba(221, 198, 151, .22); }
 .account-password__actions button:disabled { opacity: .55; cursor: wait; }
+.account-admin-entry { margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(225, 232, 245, .14); }
+.account-admin-entry h2 { margin: 0 0 10px; color: rgba(244, 235, 217, .92); font-family: 'Songti SC', 'STSong', 'SimSun', serif; font-size: 17px; font-weight: 400; letter-spacing: .06em; }
+.account-admin-entry p { margin: 0 0 15px; color: rgba(238, 232, 219, .62); font-size: 12px; line-height: 1.75; }
+.account-admin-entry__button { min-height: 39px; padding: 0 17px; border: 1px solid rgba(235, 216, 177, .42); border-radius: 99px; background: rgba(221, 198, 151, .14); color: #f2e5c8; font-size: 12px; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
+.account-admin-entry__button:hover { border-color: rgba(235, 216, 177, .65); background: rgba(221, 198, 151, .22); }
 
 .page--letters, .page--letter-detail { position: absolute; z-index: 6; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 0; background: rgba(3, 10, 21, .38); color: #f2e8d1; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .letter-page__header { position: sticky; z-index: 2; top: 0; display: flex; min-height: 76px; align-items: center; gap: 14px; padding: 16px clamp(18px, 4vw, 58px); background: linear-gradient(180deg, rgba(4, 13, 26, .72), rgba(4, 13, 26, .16)); }
@@ -376,6 +381,18 @@ button { -webkit-tap-highlight-color: transparent; }
 .diary-dialog__delete:hover { border-color: rgba(219, 180, 151, .7); background: rgba(219, 180, 151, .08); color: #f0d8c4; }
 .diary-dialog__delete:focus-visible { outline: 2px solid rgba(242, 214, 162, .72); outline-offset: 2px; }
 .diary-dialog__delete:disabled { opacity: .55; cursor: wait; }
+.emotion-picker { z-index: 20; }
+.emotion-picker__lead { margin: 12px 0 0; color: rgba(236, 232, 221, .66); font-size: 13px; line-height: 1.7; }
+.emotion-picker__options { display: flex; flex-wrap: wrap; gap: 9px; margin-top: 20px; }
+.emotion-picker__option { min-height: 38px; padding: 0 17px; border: 1px solid rgba(232, 218, 187, .24); border-radius: 999px; background: rgba(12, 25, 38, .5); color: rgba(243, 234, 216, .82); font-family: 'Songti SC', 'STSong', 'SimSun', serif; font-size: 14px; letter-spacing: .06em; cursor: pointer; transition: border-color 160ms ease, background-color 160ms ease, color 160ms ease; }
+.emotion-picker__option:hover { border-color: rgba(235, 216, 177, .6); color: #fff1d2; }
+.emotion-picker__option.is-selected { border-color: rgba(241, 203, 124, .86); background: rgba(208, 174, 106, .2); color: #ffe9bc; box-shadow: 0 0 0 2px rgba(241, 203, 124, .12); }
+.emotion-picker__option:focus-visible { outline: 2px solid rgba(242, 214, 162, .72); outline-offset: 2px; }
+.emotion-picker__actions { display: flex; justify-content: flex-end; gap: 10px; margin-top: 20px; padding-top: 16px; border-top: 1px solid rgba(234, 228, 212, .1); }
+.emotion-picker__skip, .emotion-picker__save { min-height: 38px; padding: 0 17px; border-radius: 999px; font-size: 12px; cursor: pointer; }
+.emotion-picker__skip { border: 1px solid rgba(234, 228, 212, .22); background: transparent; color: rgba(241, 238, 229, .8); }
+.emotion-picker__save { border: 1px solid rgba(235, 216, 177, .5); background: rgba(221, 198, 151, .15); color: #f2e5c8; }
+.emotion-picker__save:disabled { opacity: .55; cursor: wait; }
 
 .write-editor { position: fixed; inset: 0; width: min(760px, calc(100vw - 36px)); height: min(780px, calc(100dvh - 36px)); max-width: none; max-height: none; margin: auto; padding: 0; overflow: visible; border: 0; background: transparent; color: var(--paper); pointer-events: auto; }
 .write-editor::backdrop { background: rgba(3, 9, 17, .54); backdrop-filter: blur(4px); }
@@ -431,6 +448,31 @@ button { -webkit-tap-highlight-color: transparent; }
 .brand__tagline { margin: 19px 0 32px; color: rgba(229, 232, 241, .7); font-size: 12px; letter-spacing: .2em; }
 
 .login-form { display: grid; gap: 15px; }
+.page--setup {
+  width: min(430px, calc(100% - 40px));
+  margin: 0 auto;
+}
+.scene[data-view="setup"] {
+  overflow-y: auto;
+  padding: 24px 0 40px;
+}
+.setup-form { gap: 10px; }
+.setup-form .field { min-height: 47px; }
+.setup-note {
+  margin: -2px 2px 0;
+  color: rgba(230, 233, 240, .48);
+  font-size: 11px;
+  line-height: 1.65;
+  letter-spacing: .02em;
+}
+.entry-loading {
+  margin: 0;
+  color: rgba(236, 232, 220, .72);
+  font-family: 'Songti SC', 'STSong', 'SimSun', serif;
+  font-size: 14px;
+  letter-spacing: .08em;
+  text-align: center;
+}
 .field {
   display: flex;
   align-items: center;

@@ -3,6 +3,7 @@ package com.grow.lyy.diary.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.grow.lyy.ai.AiUnavailableException;
 import com.grow.lyy.ai.service.EmotionClassifier;
 import com.grow.lyy.ai.service.TitleGenerator;
 import com.grow.lyy.common.exception.BusinessException;
@@ -83,19 +84,24 @@ public class DiaryServiceImpl implements DiaryService {
 
 
 
-        // AI识别多个情绪
-        List<String> emotionNames =
-                emotionClassifier.classify(
-                        diary.getContent()
-                );
+        // AI识别多个情绪；不可用时保存随笔，交给前端手动选择。
+        List<String> emotionNames;
+        boolean emotionFallbackRequired = false;
+        try {
+            emotionNames = emotionClassifier.classify(diary.getContent());
+        }
+        catch (AiUnavailableException e) {
+            emotionNames = List.of();
+            emotionFallbackRequired = true;
+        }
 
-
-
-        return diaryPersistenceService.persistDiary(
+        DiaryVO result = diaryPersistenceService.persistDiary(
                 userId,
                 diary,
                 emotionNames
         );
+        result.setEmotionFallbackRequired(emotionFallbackRequired);
+        return result;
 
     }
     @Override

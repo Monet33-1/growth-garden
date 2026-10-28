@@ -1,4 +1,4 @@
-import { getToken } from './session.js?v=19';
+import { getToken } from './session.js?v=23';
 
 export class ApiError extends Error {
   constructor(message, status = 0) {
@@ -42,6 +42,22 @@ export async function login({ username, password }) {
   return result;
 }
 
+export async function getSetupStatus() {
+  const result = await request('/user/setup/status');
+  return result?.data === true;
+}
+
+export async function setupAccount({ username, password, nickname, deepseekApiKey }) {
+  const result = await request('/user/setup', {
+    method: 'POST',
+    body: JSON.stringify({ username, password, nickname, deepseekApiKey }),
+  });
+  if (!result?.data?.token) {
+    throw new ApiError(result?.message || '初始化没有完成');
+  }
+  return result.data;
+}
+
 export async function changePassword({ currentPassword, newPassword, confirmPassword }) {
   return request('/user/password', {
     method: 'PUT',
@@ -65,6 +81,12 @@ export async function getEmotions() {
   const result = await request('/emotion/list');
   if (!Array.isArray(result?.data)) throw new ApiError(result?.message || '暂时无法读取情绪瓶');
   return result.data;
+}
+
+export async function addDiaryEmotion(diaryId, emotionId) {
+  return request(`/emotion/diary/${encodeURIComponent(diaryId)}/${encodeURIComponent(emotionId)}`, {
+    method: 'POST',
+  });
 }
 
 export async function createDiary({ title, content }) {
@@ -105,7 +127,7 @@ export async function completeLetter(id) {
 }
 
 function adminHeaders(adminToken) {
-  return { Authorization: `Bearer ${adminToken}` };
+  return adminToken ? { Authorization: `Bearer ${adminToken}` } : {};
 }
 
 export async function loginAdmin({ username, password }) {

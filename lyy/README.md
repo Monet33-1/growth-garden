@@ -6,8 +6,41 @@ REST API and the static single-page frontend from the same process.
 ## Requirements
 
 - JDK 21
-- MySQL 8
-- A DeepSeek API key (for AI title generation and emotion classification)
+- MySQL 8 for the server deployment
+- A DeepSeek API key (optional; AI falls back to “无题” without one)
+
+## Windows desktop profile
+
+The `desktop` profile uses an embedded H2 database, so MySQL is not required.
+
+```bash
+.\mvnw.cmd spring-boot:run -Dspring-boot.run.profiles=desktop
+```
+
+Open <http://localhost:18080>. On first launch the UI asks for the garden
+username, password, nickname, and an optional DeepSeek key.
+
+If the AI service is unavailable, the diary is still saved and the UI asks the
+user to choose emotions manually.
+
+The desktop build authorizes its single signed-in account for
+`/admin/letters`, so hidden letters can be managed locally. Those edits go
+straight into the local H2 database. They are not pushed to other installations;
+publish a new version to distribute changed letters.
+
+Desktop data and settings are stored outside the project:
+
+```text
+%USERPROFILE%\.growth-garden\
+├── data\growth_garden.mv.db
+├── config\application-local.properties
+└── logs\
+```
+
+## Windows desktop build
+
+The Electron shell and packaging instructions live in
+[`desktop/electron/README.md`](desktop/electron/README.md).
 
 ## Local development
 

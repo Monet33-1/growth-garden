@@ -4,9 +4,11 @@ package com.grow.lyy.ai.service.impl;
 import com.grow.lyy.ai.provider.AIProvider;
 import com.grow.lyy.ai.service.TitleGenerator;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class TitleGeneratorImpl implements TitleGenerator {
@@ -35,7 +37,18 @@ public class TitleGeneratorImpl implements TitleGenerator {
                 """.formatted(content);
 
 
-        return aiProvider.chat(prompt).trim();
+        try {
+            String title = aiProvider.chat(prompt);
+            if (title == null || title.isBlank()) {
+                return "无题";
+            }
+            String cleaned = title.replaceAll("\\s+", " ").trim();
+            return cleaned.length() > 80 ? cleaned.substring(0, 80) : cleaned;
+        }
+        catch (RuntimeException e) {
+            log.warn("AI 标题生成失败，使用默认标题: {}", e.getMessage());
+            return "无题";
+        }
 
     }
 }

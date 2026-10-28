@@ -1,0 +1,63 @@
+{
+  "name": "growth-garden-desktop",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Growth Garden Windows desktop shell",
+  "main": "main.js",
+  "author": "Monet33-1",
+  "scripts": {
+    "start": "electron .",
+    "dist": "electron-builder --win nsis",
+    "dist:dir": "electron-builder --win dir"
+  },
+  "dependencies": {
+    "electron-updater": "^6.3.9"
+  },
+  "devDependencies": {
+    "electron": "^33.0.0",
+    "electron-builder": "^25.1.8"
+  },
+  "build": {
+    "appId": "com.grow.lyy.desktop",
+    "productName": "GrowthGarden",
+    "directories": {
+      "output": "dist"
+    },
+    "files": [
+      "main.js",
+      "package.json",
+      "build/icon.png"
+    ],
+    "extraResources": [
+      {
+        "from": "../../target/lyy-0.0.1-SNAPSHOT.jar",
+        "to": "app.jar"
+      },
+      {
+        "from": "../runtime",
+        "to": "runtime"
+      }
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico",
+      "signAndEditExecutable": false,
+      "artifactName": "GrowthGarden-Setup-${version}.${ext}"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true,
+      "createDesktopShortcut": true,
+      "createStartMenuShortcut": true,
+      "installerIcon": "build/icon.ico",
+      "uninstallerIcon": "build/icon.ico"
+    },
+    "publish": [
+      {
+        "provider": "github",
+        "owner": "Monet33-1",
+        "repo": "growth-garden"
+      }
+    ]
+  }
+}

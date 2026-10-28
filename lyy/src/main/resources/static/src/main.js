@@ -1,5 +1,5 @@
-import { ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, login, loginAdmin, updateAdminLetter, updateAdminLetterSort } from './api.js?v=19';
-import { clearSession, getToken, saveSession } from './session.js?v=19';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort } from './api.js?v=23';
+import { clearSession, getToken, saveSession } from './session.js?v=23';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
@@ -111,6 +111,122 @@ function showLogin(message = '') {
     button.setAttribute('aria-label', visible ? '显示密码' : '隐藏密码');
     button.setAttribute('title', visible ? '显示密码' : '隐藏密码');
   });
+}
+
+function showSetup() {
+  document.getElementById('app').dataset.view = 'setup';
+  page.className = 'page page--setup';
+  page.innerHTML = `
+    <header class="brand">
+      <p class="brand__english">Growth Garden</p>
+      <div class="brand__title"><span></span><h1>成长花园</h1><span></span></div>
+      <p class="brand__tagline">第一次来到这里，先为你的花园开一扇门</p>
+    </header>
+    <form class="login-form setup-form" id="setup-form" novalidate>
+      <label class="field">
+        <span class="field__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="8" r="3.5"/><path d="M5.5 20c.5-3.4 2.8-5.2 6.5-5.2s6 1.8 6.5 5.2"/></svg></span>
+        <span class="visually-hidden">花园主人名字</span>
+        <input id="setup-username" name="username" type="text" maxlength="50" placeholder="花园主人名字" autocomplete="username" required />
+      </label>
+      <label class="field">
+        <span class="field__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10" width="13" height="10" rx="1.8"/><path d="M8.5 10V7.3a3.5 3.5 0 0 1 7 0V10M12 14v2.5"/></svg></span>
+        <span class="visually-hidden">花园钥匙</span>
+        <input id="setup-password" name="password" type="password" minlength="8" maxlength="72" placeholder="设置花园钥匙（至少 8 位）" autocomplete="new-password" required />
+      </label>
+      <label class="field">
+        <span class="field__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="5.5" y="10" width="13" height="10" rx="1.8"/><path d="M8.5 10V7.3a3.5 3.5 0 0 1 7 0V10M12 14v2.5"/></svg></span>
+        <span class="visually-hidden">确认花园钥匙</span>
+        <input id="setup-password-confirm" name="confirmPassword" type="password" minlength="8" maxlength="72" placeholder="再输入一次花园钥匙" autocomplete="new-password" required />
+      </label>
+      <label class="field">
+        <span class="field__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M5 16h14"/></svg></span>
+        <span class="visually-hidden">昵称</span>
+        <input id="setup-nickname" name="nickname" type="text" maxlength="50" placeholder="想被怎么称呼（选填）" autocomplete="nickname" />
+      </label>
+      <label class="field">
+        <span class="field__icon" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 3v18M5 8h14M5 16h14"/></svg></span>
+        <span class="visually-hidden">DeepSeek Key</span>
+        <input id="setup-api-key" name="deepseekApiKey" type="password" maxlength="200" placeholder="DeepSeek Key（选填，稍后可补）" autocomplete="off" />
+      </label>
+      <p class="setup-note">AI 标题与情绪分类需要 DeepSeek Key；暂时不填也可以先使用，写下的故事会正常保存。</p>
+      <p class="form-message" id="setup-message" role="status" aria-live="polite"></p>
+      <button class="submit-button" id="setup-submit" type="submit">
+        <span class="submit-button__seed" aria-hidden="true">✦</span>
+        <span id="setup-submit-label">开始种下花园</span>
+        <span class="submit-button__arrow" aria-hidden="true">→</span>
+      </button>
+    </form>
+    <p class="entry-note">这些信息只保存在这台电脑上</p>
+  `;
+
+  const form = document.getElementById('setup-form');
+  const usernameInput = document.getElementById('setup-username');
+  const passwordInput = document.getElementById('setup-password');
+  const confirmInput = document.getElementById('setup-password-confirm');
+  const nicknameInput = document.getElementById('setup-nickname');
+  const apiKeyInput = document.getElementById('setup-api-key');
+  const message = document.getElementById('setup-message');
+  const submitButton = document.getElementById('setup-submit');
+  const submitLabel = document.getElementById('setup-submit-label');
+
+  form.addEventListener('submit', async (event) => {
+    event.preventDefault();
+    const username = usernameInput.value.trim();
+    const password = passwordInput.value;
+    const confirmPassword = confirmInput.value;
+    const nickname = nicknameInput.value.trim();
+    const deepseekApiKey = apiKeyInput.value.trim();
+
+    if (!username) {
+      message.textContent = '先给花园主人取一个名字吧。';
+      usernameInput.focus();
+      return;
+    }
+    if (password.length < 8) {
+      message.textContent = '花园钥匙至少需要 8 个字符。';
+      passwordInput.focus();
+      return;
+    }
+    if (password !== confirmPassword) {
+      message.textContent = '两次输入的花园钥匙不一致。';
+      confirmInput.focus();
+      return;
+    }
+
+    message.textContent = '';
+    submitButton.disabled = true;
+    submitLabel.textContent = '正在打开花园';
+
+    try {
+      const result = await setupAccount({ username, password, nickname, deepseekApiKey });
+      saveSession({ token: result.token, nickname: result.nickname });
+      navigate('/garden');
+    } catch (error) {
+      message.textContent = error instanceof TypeError
+        ? '花园暂时没有回应，请稍后再试。'
+        : error.message || '花园暂时没有准备好，请稍后再试。';
+    } finally {
+      submitButton.disabled = false;
+      submitLabel.textContent = '开始种下花园';
+    }
+  });
+}
+
+async function showEntry() {
+  document.getElementById('app').dataset.view = 'login';
+  page.className = 'page';
+  page.innerHTML = '<p class="entry-loading">正在准备你的花园……</p>';
+
+  try {
+    if (await getSetupStatus()) {
+      showSetup();
+      return;
+    }
+  } catch {
+    // A production deployment does not expose the desktop setup endpoints.
+  }
+
+  showLogin();
 }
 
 function toast(message) {
@@ -345,6 +461,79 @@ async function addDiaryStar(diary) {
   }
 }
 
+async function openEmotionPicker(diary) {
+  const dialog = document.getElementById('emotion-picker-dialog');
+  const options = document.getElementById('emotion-picker-options');
+  const message = document.getElementById('emotion-picker-message');
+  const saveButton = document.getElementById('emotion-picker-save');
+  const skipButton = document.getElementById('emotion-picker-skip');
+  const closeButton = document.getElementById('emotion-picker-close');
+  if (!dialog || !options || !saveButton) return;
+
+  const selected = new Set();
+  options.innerHTML = '';
+  message.textContent = '';
+  saveButton.disabled = true;
+  saveButton.textContent = '保存情绪';
+
+  try {
+    const emotions = await getEmotions();
+    if (!emotions.length) {
+      toast('花园里还没有可用的情绪瓶。');
+      return;
+    }
+    options.innerHTML = emotions.map((emotion) => (
+      `<button class="emotion-picker__option" type="button" data-emotion-id="${escapeHtml(emotion.id)}">${escapeHtml(emotion.name || '未命名')}</button>`
+    )).join('');
+    options.querySelectorAll('[data-emotion-id]').forEach((button) => {
+      button.addEventListener('click', () => {
+        const id = button.dataset.emotionId;
+        if (selected.has(id)) {
+          selected.delete(id);
+          button.classList.remove('is-selected');
+        } else {
+          selected.add(id);
+          button.classList.add('is-selected');
+        }
+      });
+    });
+  } catch {
+    toast('情绪瓶暂时没有显现，故事已经保存好了。');
+    return;
+  }
+
+  closeButton.onclick = () => dialog.close();
+  skipButton.onclick = () => dialog.close();
+  saveButton.disabled = false;
+  saveButton.onclick = async () => {
+    if (!selected.size) {
+      dialog.close();
+      return;
+    }
+    saveButton.disabled = true;
+    saveButton.textContent = '正在保存…';
+    message.textContent = '';
+    try {
+      await Promise.all([...selected].map((emotionId) => addDiaryEmotion(diary.id, emotionId)));
+      dialog.close();
+      toast('情绪已经收进花园。');
+    } catch (error) {
+      if (error instanceof ApiError && [401, 403].includes(error.status)) {
+        clearSession();
+        navigate('/user/login');
+        return;
+      }
+      message.textContent = error.message || '情绪暂时没有保存，请再试一次。';
+    } finally {
+      saveButton.disabled = false;
+      saveButton.textContent = '保存情绪';
+    }
+  };
+
+  if (dialog.open) dialog.close();
+  dialog.showModal();
+}
+
 function openDiaryEditor() {
   const editor = document.getElementById('write-editor');
   const form = document.getElementById('write-editor-form');
@@ -420,9 +609,13 @@ function openDiaryEditor() {
         : '故事瓶，随笔已保存，数量暂时无法读取');
       editor.close();
       await addDiaryStar(newDiary);
-      toast(newDiary.title
-        ? '故事已经收进花园，夜空多了一颗星。'
-        : '故事已经收好，标题暂时留白。');
+      if (newDiary.emotionFallbackRequired) {
+        await openEmotionPicker(newDiary);
+      } else {
+        toast(newDiary.title
+          ? '故事已经收进花园，夜空多了一颗星。'
+          : '故事已经收好，标题暂时留白。');
+      }
     } catch (error) {
       if (error instanceof ApiError && [401, 403].includes(error.status)) {
         clearSession();
@@ -484,6 +677,19 @@ async function showHome() {
       <p class="diary-dialog__message" id="diary-dialog-message" role="status" aria-live="polite"></p>
       <div class="diary-dialog__actions">
         <button class="diary-dialog__delete" id="diary-dialog-delete" type="button">删除这篇随笔</button>
+      </div>
+    </dialog>
+
+    <dialog id="emotion-picker-dialog" class="diary-dialog emotion-picker">
+      <button class="diary-dialog__close" id="emotion-picker-close" type="button" aria-label="关闭">×</button>
+      <p class="diary-dialog__eyebrow">A NOTE NEEDS A FEELING</p>
+      <h2>这篇随笔，是什么情绪？</h2>
+      <p class="emotion-picker__lead">这次没有连上 AI，故事已经收好了。先手动选择情绪吧，可以多选，也可以先跳过。</p>
+      <div class="emotion-picker__options" id="emotion-picker-options"></div>
+      <p class="diary-dialog__message" id="emotion-picker-message" role="status" aria-live="polite"></p>
+      <div class="emotion-picker__actions">
+        <button class="emotion-picker__skip" id="emotion-picker-skip" type="button">先不选</button>
+        <button class="emotion-picker__save" id="emotion-picker-save" type="button">保存情绪</button>
       </div>
     </dialog>
 
@@ -1118,8 +1324,7 @@ async function showAdminLetters() {
 
   document.getElementById('letter-admin-back').addEventListener('click', () => navigate('/garden'));
 
-  const refreshLetters = async (successMessage = '') => {
-    if (!adminToken) return;
+  const refreshLetters = async (successMessage = '', silentAuthFailure = false) => {
     gate.hidden = true;
     list.hidden = false;
     document.getElementById('letter-admin-message').hidden = false;
@@ -1159,9 +1364,11 @@ async function showAdminLetters() {
         document.getElementById('letter-admin-message').hidden = true;
         createButton.hidden = true;
         sortActions.hidden = true;
-        gateMessage.textContent = '管理员验证已过期，请重新登录。';
-        gateForm.elements.password.value = '';
-        gateForm.elements.password.focus();
+        gateMessage.textContent = silentAuthFailure ? '' : '管理员验证已过期，请重新登录。';
+        if (!silentAuthFailure) {
+          gateForm.elements.password.value = '';
+          gateForm.elements.password.focus();
+        }
         return;
       }
       sortActions.hidden = true;
@@ -1265,7 +1472,13 @@ async function showAdminLetters() {
     }
   });
 
-  if (adminToken) await refreshLetters();
+  if (adminToken) {
+    await refreshLetters();
+  } else {
+    // Desktop builds authorize the signed-in local account automatically.
+    // Online builds keep showing the administrator gate when this probe fails.
+    await refreshLetters('', true);
+  }
 }
 
 function showAccountManagement() {
@@ -1288,10 +1501,17 @@ function showAccountManagement() {
           '<div class="account-password__actions"><button class="account-password__cancel" id="account-cancel" type="button">取消</button><button class="account-password__submit" id="change-password-submit" type="submit">确认修改</button></div>' +
         '</form>' +
       '</section>' +
+      '<section class="account-admin-entry">' +
+        '<p class="account-panel__eyebrow">LETTERS FOR THE GARDEN</p>' +
+        '<h2>隐藏信件</h2>' +
+        '<p>整理那些会在合适时刻抵达的信。桌面版会直接修改本机 H2 数据库。</p>' +
+        '<button class="account-admin-entry__button" id="account-manage-letters" type="button">管理隐藏信件 →</button>' +
+      '</section>' +
     '</main>';
 
   document.getElementById('account-back').addEventListener('click', () => navigate('/garden'));
   document.getElementById('account-cancel').addEventListener('click', () => navigate('/garden'));
+  document.getElementById('account-manage-letters').addEventListener('click', () => navigate('/admin/letters'));
   bindProfileMenu();
 
   const form = document.getElementById('change-password-form');
@@ -1370,9 +1590,9 @@ function renderRoute() {
     window.history.replaceState({}, '', '/user/login');
   }
 
-  // Visiting a login URL always shows the login form, even if an older JWT
-  // remains in localStorage. A successful login will navigate to /garden.
-  showLogin();
+  // Visiting a login URL always checks first-run setup before showing the
+  // login form, even if an older JWT remains in localStorage.
+  void showEntry();
 }
 
 window.addEventListener('popstate', renderRoute);

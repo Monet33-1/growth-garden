@@ -53,6 +53,8 @@ public class SecurityConfig {
                                         "/src/**",
                                         "/images/**",
                                         "/user/login",
+                                        "/user/setup",
+                                        "/user/setup/status",
                                         "/admin/letters",
                                         "/letter/admin/login"
                                 )

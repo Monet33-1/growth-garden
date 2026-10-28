@@ -33,4 +33,9 @@ public class DiaryVO {
      */
     private List<Emotion> emotions;
 
+    /**
+     * AI 不可用时为 true，前端应让用户手动选择情绪。
+     */
+    private boolean emotionFallbackRequired;
+
 }

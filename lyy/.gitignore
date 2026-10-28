@@ -33,5 +33,15 @@ application-local.properties
 .env
 *.log
 db/export/
+# Local-only deployment artifacts
+docker-compose.override.yml
+Dockerfile.runtime
+deploy/
+# Desktop build artifacts
+src/main/resources/db/desktop/letters.sql
+desktop/runtime/
+desktop/electron/node_modules/
+desktop/electron/dist/
+desktop/electron/*.log
 ### VS Code ###
 .vscode/

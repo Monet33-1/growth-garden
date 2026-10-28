@@ -1,16 +1,19 @@
 package com.grow.lyy.diary.service.impl;
 
+import com.grow.lyy.ai.AiUnavailableException;
 import com.grow.lyy.ai.service.EmotionClassifier;
 import com.grow.lyy.ai.service.TitleGenerator;
 import com.grow.lyy.common.exception.BusinessException;
 import com.grow.lyy.diary.entity.Diary;
 import com.grow.lyy.diary.mapper.DiaryMapper;
+import com.grow.lyy.diary.vo.DiaryVO;
 import com.grow.lyy.emotion.mapper.DiaryEmotionMapper;
 import com.grow.lyy.emotion.service.EmotionService;
 import com.grow.lyy.letter.mapper.UserLetterMapper;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -38,6 +41,25 @@ class DiaryServiceImplTest {
             diaryEmotionMapper,
             userLetterMapper
     );
+
+    @Test
+    void marksEmotionFallbackWhenClassifierIsUnavailable() {
+        Diary diary = new Diary();
+        diary.setTitle("今天的风");
+        diary.setContent("今天的花园很安静。");
+
+        DiaryVO persisted = new DiaryVO();
+        persisted.setId(11L);
+        when(emotionClassifier.classify(any())).thenThrow(
+                new AiUnavailableException("offline", new RuntimeException("offline"))
+        );
+        when(diaryPersistenceService.persistDiary(any(), any(), any()))
+                .thenReturn(persisted);
+
+        DiaryVO result = service.createDiary(1L, diary);
+
+        assertTrue(result.isEmotionFallbackRequired());
+    }
 
     @Test
     void deleteRemovesDiaryRelations() {

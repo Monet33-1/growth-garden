@@ -66,6 +66,14 @@
 		</dependency>
 
 
+		<!-- H2 for the Windows desktop profile -->
+		<dependency>
+			<groupId>com.h2database</groupId>
+			<artifactId>h2</artifactId>
+			<scope>runtime</scope>
+		</dependency>
+
+
 		<!-- MyBatis Plus -->
 		<dependency>
 			<groupId>com.baomidou</groupId>

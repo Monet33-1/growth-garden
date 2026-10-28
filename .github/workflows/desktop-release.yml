@@ -1,0 +1,87 @@
+name: Desktop Release
+
+on:
+  push:
+    tags:
+      - "v*"
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Java 21
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+          cache: npm
+          cache-dependency-path: lyy/desktop/electron/package-lock.json
+
+      - name: Restore private letters seed
+        shell: pwsh
+        env:
+          LETTERS_SEED_SQL: ${{ secrets.LETTERS_SEED_SQL }}
+        run: |
+          if ([string]::IsNullOrWhiteSpace($env:LETTERS_SEED_SQL)) {
+            throw 'LETTERS_SEED_SQL is required for a release build.'
+          }
+          New-Item -ItemType Directory -Path 'lyy/db/export' -Force | Out-Null
+          [IO.File]::WriteAllText(
+            (Join-Path $PWD 'lyy/db/export/seed-letters.sql'),
+            $env:LETTERS_SEED_SQL,
+            [Text.UTF8Encoding]::new($false)
+          )
+
+      - name: Build jar and bundled runtime
+        working-directory: lyy
+        shell: pwsh
+        run: .\desktop\build-runtime.ps1
+
+      - name: Verify hidden letters were packaged
+        shell: pwsh
+        run: |
+          $seed = 'lyy/src/main/resources/db/desktop/letters.sql'
+          if (-not (Test-Path -LiteralPath $seed)) {
+            throw "Hidden letter seed was not generated: $seed"
+          }
+          if ((Get-Item -LiteralPath $seed).Length -lt 1000) {
+            throw "Hidden letter seed looks empty: $seed"
+          }
+
+      - name: Install Electron dependencies
+        working-directory: lyy/desktop/electron
+        env:
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+        run: npm ci
+
+      - name: Set version from tag
+        if: startsWith(github.ref, 'refs/tags/v')
+        working-directory: lyy/desktop/electron
+        shell: pwsh
+        env:
+          TAG_NAME: ${{ github.ref_name }}
+        run: |
+          $version = $env:TAG_NAME.TrimStart('v')
+          npm version $version --no-git-tag-version
+
+      - name: Build and publish installer
+        working-directory: lyy/desktop/electron
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ELECTRON_MIRROR: https://npmmirror.com/mirrors/electron/
+          ELECTRON_BUILDER_BINARIES_MIRROR: https://npmmirror.com/mirrors/electron-builder-binaries/
+        run: npx electron-builder --win nsis --publish always
