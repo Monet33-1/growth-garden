@@ -87,6 +87,11 @@ class DesktopProfileTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data").isArray());
 
+        mockMvc.perform(get("/user/ai-key")
+                        .header("Authorization", "Bearer " + token))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.configured").isBoolean());
+
         mockMvc.perform(post("/letter/admin")
                         .header("Authorization", "Bearer " + token)
                         .contentType(MediaType.APPLICATION_JSON)

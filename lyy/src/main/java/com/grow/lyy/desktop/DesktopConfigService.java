@@ -24,11 +24,7 @@ public class DesktopConfigService {
     private final AIProperties aiProperties;
 
     public void saveDeepSeekKey(String apiKey) {
-        if (apiKey == null || apiKey.isBlank()) {
-            return;
-        }
-
-        String value = apiKey.trim();
+        String value = apiKey == null ? "" : apiKey.trim();
         Path path = configPath();
         Properties properties = new Properties();
 
@@ -40,7 +36,11 @@ public class DesktopConfigService {
             }
         }
 
-        properties.setProperty(API_KEY, value);
+        if (value.isEmpty()) {
+            properties.remove(API_KEY);
+        } else {
+            properties.setProperty(API_KEY, value);
+        }
 
         try {
             Files.createDirectories(path.getParent());
@@ -51,7 +51,7 @@ public class DesktopConfigService {
             throw new IllegalStateException("无法写入桌面配置: " + path, e);
         }
 
-        aiProperties.setApiKey(value);
+        aiProperties.setApiKey(value.isEmpty() ? null : value);
     }
 
     private Path configPath() {

@@ -1,4 +1,4 @@
-import { getToken } from './session.js?v=23';
+import { getToken } from './session.js?v=25';
 
 export class ApiError extends Error {
   constructor(message, status = 0) {
@@ -56,6 +56,19 @@ export async function setupAccount({ username, password, nickname, deepseekApiKe
     throw new ApiError(result?.message || '初始化没有完成');
   }
   return result.data;
+}
+
+export async function getAiKeyStatus() {
+  const result = await request('/user/ai-key');
+  return result?.data || { configured: false, masked: '' };
+}
+
+export async function updateAiKey(apiKey) {
+  const result = await request('/user/ai-key', {
+    method: 'PUT',
+    body: JSON.stringify({ apiKey }),
+  });
+  return result?.data || { configured: false, masked: '' };
 }
 
 export async function changePassword({ currentPassword, newPassword, confirmPassword }) {

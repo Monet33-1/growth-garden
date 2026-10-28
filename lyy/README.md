@@ -23,10 +23,9 @@ username, password, nickname, and an optional DeepSeek key.
 If the AI service is unavailable, the diary is still saved and the UI asks the
 user to choose emotions manually.
 
-The desktop build authorizes its single signed-in account for
-`/admin/letters`, so hidden letters can be managed locally. Those edits go
-straight into the local H2 database. They are not pushed to other installations;
-publish a new version to distribute changed letters.
+The desktop account page includes a DeepSeek Key setting. The key is stored only
+on that computer, in `%USERPROFILE%\.growth-garden\config`. Changes take effect
+immediately; clearing the key leaves the app usable without AI.
 
 Desktop data and settings are stored outside the project:
 

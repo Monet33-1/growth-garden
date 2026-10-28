@@ -34,10 +34,9 @@ The desktop backend stores its data under
 `%APPDATA%\GrowthGarden\.growth-garden` because the Electron process passes
 `-Duser.home=<Electron userData>` to Java.
 
-The signed-in desktop account can open **账号管理 → 管理隐藏信件**. In the
-desktop profile this edits the local H2 database directly, without a separate
-administrator password. Changes are local only; publish a new version to share
-them with other installations.
+The desktop account page includes a DeepSeek Key setting. The key is written to
+the local config directory and applied immediately. No separate administrator
+login is needed for this setting.
 
 ## Hidden letters
 

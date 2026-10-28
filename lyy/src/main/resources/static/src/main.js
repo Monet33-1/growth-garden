@@ -1,5 +1,5 @@
-import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort } from './api.js?v=23';
-import { clearSession, getToken, saveSession } from './session.js?v=23';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=25';
+import { clearSession, getToken, saveSession } from './session.js?v=25';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
@@ -1501,17 +1501,19 @@ function showAccountManagement() {
           '<div class="account-password__actions"><button class="account-password__cancel" id="account-cancel" type="button">取消</button><button class="account-password__submit" id="change-password-submit" type="submit">确认修改</button></div>' +
         '</form>' +
       '</section>' +
-      '<section class="account-admin-entry">' +
-        '<p class="account-panel__eyebrow">LETTERS FOR THE GARDEN</p>' +
-        '<h2>隐藏信件</h2>' +
-        '<p>整理那些会在合适时刻抵达的信。桌面版会直接修改本机 H2 数据库。</p>' +
-        '<button class="account-admin-entry__button" id="account-manage-letters" type="button">管理隐藏信件 →</button>' +
+      '<section class="account-ai-entry" id="account-ai-entry" hidden>' +
+        '<p class="account-panel__eyebrow">AI SETTINGS</p>' +
+        '<h2>DeepSeek Key</h2>' +
+        '<p>用于生成随笔标题和识别情绪。Key 只保存在这台电脑上。</p>' +
+        '<p class="account-ai-entry__status" id="ai-key-status">正在读取…</p>' +
+        '<label class="account-ai-entry__field"><span>新的 API Key</span><input id="ai-key-input" type="password" maxlength="200" autocomplete="off" placeholder="sk-..." /></label>' +
+        '<p class="account-ai-entry__message" id="ai-key-message" role="status" aria-live="polite"></p>' +
+        '<div class="account-ai-entry__actions"><button class="account-ai-entry__save" id="save-ai-key" type="button">保存 Key</button><button class="account-ai-entry__clear" id="clear-ai-key" type="button">清除 Key</button></div>' +
       '</section>' +
     '</main>';
 
   document.getElementById('account-back').addEventListener('click', () => navigate('/garden'));
   document.getElementById('account-cancel').addEventListener('click', () => navigate('/garden'));
-  document.getElementById('account-manage-letters').addEventListener('click', () => navigate('/admin/letters'));
   bindProfileMenu();
 
   const form = document.getElementById('change-password-form');
@@ -1563,6 +1565,87 @@ function showAccountManagement() {
       submit.disabled = false;
       submit.textContent = '确认修改';
     }
+  });
+
+  const aiEntry = document.getElementById('account-ai-entry');
+  const aiStatus = document.getElementById('ai-key-status');
+  const aiMessage = document.getElementById('ai-key-message');
+  const aiInput = document.getElementById('ai-key-input');
+  const saveAiKey = document.getElementById('save-ai-key');
+  const clearAiKey = document.getElementById('clear-ai-key');
+
+  const renderAiStatus = (data) => {
+    aiStatus.textContent = data?.configured
+      ? `已配置：${data.masked || '已保存'}`
+      : '还没有配置 DeepSeek Key。没有 Key 时，标题会显示为“无题”，也不会自动识别情绪。';
+  };
+
+  const handleAiError = (error) => {
+    if (error instanceof ApiError && [401, 403].includes(error.status)) {
+      clearSession();
+      navigate('/user/login');
+      return true;
+    }
+    return false;
+  };
+
+  saveAiKey.addEventListener('click', async () => {
+    const apiKey = aiInput.value.trim();
+    if (!apiKey) {
+      aiMessage.textContent = '请粘贴一个 DeepSeek Key，或使用“清除 Key”。';
+      aiInput.focus();
+      return;
+    }
+    saveAiKey.disabled = true;
+    aiMessage.textContent = '正在保存…';
+    try {
+      const data = await updateAiKey(apiKey);
+      renderAiStatus(data);
+      aiInput.value = '';
+      aiMessage.textContent = 'Key 已保存，新的随笔会立即使用它。';
+    } catch (error) {
+      if (!handleAiError(error)) {
+        aiMessage.textContent = error.message || 'Key 暂时没有保存，请稍后再试。';
+      }
+    } finally {
+      saveAiKey.disabled = false;
+    }
+  });
+
+  clearAiKey.addEventListener('click', async () => {
+    if (!window.confirm('确定要清除这台电脑上保存的 DeepSeek Key 吗？')) return;
+    clearAiKey.disabled = true;
+    aiMessage.textContent = '正在清除…';
+    try {
+      const data = await updateAiKey('');
+      renderAiStatus(data);
+      aiInput.value = '';
+      aiMessage.textContent = 'Key 已清除，之后的随笔不会再调用 AI。';
+    } catch (error) {
+      if (!handleAiError(error)) {
+        aiMessage.textContent = error.message || 'Key 暂时没有清除，请稍后再试。';
+      }
+    } finally {
+      clearAiKey.disabled = false;
+    }
+  });
+
+  void getAiKeyStatus().then((data) => {
+    aiEntry.hidden = false;
+    renderAiStatus(data);
+  }).catch((error) => {
+    if (error instanceof ApiError && [401, 403].includes(error.status)) {
+      clearSession();
+      navigate('/user/login');
+      return;
+    }
+    if (error instanceof ApiError && error.status === 404) {
+      aiEntry.hidden = true;
+      return;
+    }
+    aiEntry.hidden = false;
+    renderAiStatus(null);
+    aiMessage.textContent = '暂时无法读取 Key 状态，请稍后刷新。';
   });
 }
 

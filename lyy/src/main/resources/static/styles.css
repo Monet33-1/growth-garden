@@ -324,11 +324,20 @@ button { -webkit-tap-highlight-color: transparent; }
 .account-password__submit { border: 1px solid rgba(235, 216, 177, .42); background: rgba(221, 198, 151, .14); color: #f2e5c8; transition: background 160ms ease, border-color 160ms ease; }
 .account-password__submit:hover:not(:disabled) { border-color: rgba(235, 216, 177, .65); background: rgba(221, 198, 151, .22); }
 .account-password__actions button:disabled { opacity: .55; cursor: wait; }
-.account-admin-entry { margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(225, 232, 245, .14); }
-.account-admin-entry h2 { margin: 0 0 10px; color: rgba(244, 235, 217, .92); font-family: 'Songti SC', 'STSong', 'SimSun', serif; font-size: 17px; font-weight: 400; letter-spacing: .06em; }
-.account-admin-entry p { margin: 0 0 15px; color: rgba(238, 232, 219, .62); font-size: 12px; line-height: 1.75; }
-.account-admin-entry__button { min-height: 39px; padding: 0 17px; border: 1px solid rgba(235, 216, 177, .42); border-radius: 99px; background: rgba(221, 198, 151, .14); color: #f2e5c8; font-size: 12px; cursor: pointer; transition: background 160ms ease, border-color 160ms ease; }
-.account-admin-entry__button:hover { border-color: rgba(235, 216, 177, .65); background: rgba(221, 198, 151, .22); }
+.account-ai-entry { margin-top: 26px; padding-top: 22px; border-top: 1px solid rgba(225, 232, 245, .14); }
+.account-ai-entry h2 { margin: 0 0 10px; color: rgba(244, 235, 217, .92); font-family: 'Songti SC', 'STSong', 'SimSun', serif; font-size: 17px; font-weight: 400; letter-spacing: .06em; }
+.account-ai-entry > p { margin: 0 0 13px; color: rgba(238, 232, 219, .62); font-size: 12px; line-height: 1.75; }
+.account-ai-entry__status { color: rgba(231, 211, 169, .82) !important; }
+.account-ai-entry__field { display: grid; gap: 8px; margin-top: 12px; color: rgba(236, 231, 221, .78); font-size: 12px; }
+.account-ai-entry__field input { width: 100%; min-height: 43px; padding: 0 13px; border: 1px solid rgba(225, 232, 245, .22); border-radius: 8px; outline: none; background: rgba(4, 13, 25, .37); color: #f5ead5; font-size: 14px; transition: border-color 160ms ease, background 160ms ease; }
+.account-ai-entry__field input:focus { border-color: rgba(231, 209, 163, .65); background: rgba(4, 13, 25, .5); }
+.account-ai-entry__message { min-height: 20px; margin: 12px 0 4px; color: #e6d5ae; font-size: 12px; line-height: 1.6; }
+.account-ai-entry__actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 10px; }
+.account-ai-entry__actions button { min-height: 39px; padding: 0 17px; border-radius: 99px; font-size: 12px; cursor: pointer; }
+.account-ai-entry__save { border: 1px solid rgba(235, 216, 177, .42); background: rgba(221, 198, 151, .14); color: #f2e5c8; }
+.account-ai-entry__save:hover:not(:disabled) { border-color: rgba(235, 216, 177, .65); background: rgba(221, 198, 151, .22); }
+.account-ai-entry__clear { border: 1px solid rgba(225, 232, 245, .22); background: transparent; color: rgba(239, 233, 221, .76); }
+.account-ai-entry__actions button:disabled { opacity: .55; cursor: wait; }
 
 .page--letters, .page--letter-detail { position: absolute; z-index: 6; inset: 0; width: 100%; height: 100%; margin: 0; padding: 0; overflow-x: hidden; overflow-y: auto; border: 0; border-radius: 0; background: rgba(3, 10, 21, .38); color: #f2e8d1; backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
 .letter-page__header { position: sticky; z-index: 2; top: 0; display: flex; min-height: 76px; align-items: center; gap: 14px; padding: 16px clamp(18px, 4vw, 58px); background: linear-gradient(180deg, rgba(4, 13, 26, .72), rgba(4, 13, 26, .16)); }
