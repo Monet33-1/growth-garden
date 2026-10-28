@@ -56,7 +56,8 @@
       {
         "provider": "github",
         "owner": "Monet33-1",
-        "repo": "growth-garden"
+        "repo": "growth-garden",
+        "releaseType": "release"
       }
     ]
   }
