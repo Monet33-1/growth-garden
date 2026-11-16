@@ -12,6 +12,7 @@ import com.grow.lyy.diary.entity.Diary;
 import com.grow.lyy.diary.mapper.DiaryMapper;
 import com.grow.lyy.diary.service.DiaryService;
 import com.grow.lyy.diary.vo.DiaryVO;
+import com.grow.lyy.diary.vo.RandomMemoryVO;
 import com.grow.lyy.emotion.entity.DiaryEmotion;
 import com.grow.lyy.emotion.entity.Emotion;
 import com.grow.lyy.emotion.mapper.DiaryEmotionMapper;
@@ -22,7 +23,10 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ThreadLocalRandom;
 
 @Service
 @RequiredArgsConstructor
@@ -124,6 +128,85 @@ public class DiaryServiceImpl implements DiaryService {
         return diaries.stream()
                 .map(diary -> toVO(userId, diary))
                 .toList();
+    }
+
+    @Override
+    public RandomMemoryVO getRandomMemory(
+            Long userId,
+            List<Long> excludeIds,
+            Long emotionId
+    ) {
+
+        if (userId == null) {
+            throw new BusinessException("用户未登录");
+        }
+
+        List<Diary> diaries = diaryMapper.selectList(
+                new LambdaQueryWrapper<Diary>()
+                        .eq(Diary::getUserId, userId)
+        );
+
+        if (diaries.isEmpty()) {
+            return new RandomMemoryVO();
+        }
+
+        if (emotionId != null) {
+            List<Long> diaryIds = diaries.stream()
+                    .map(Diary::getId)
+                    .toList();
+
+            Set<Long> matchingDiaryIds = new HashSet<>(
+                    diaryEmotionMapper.selectList(
+                                    new LambdaQueryWrapper<DiaryEmotion>()
+                                            .eq(DiaryEmotion::getEmotionId, emotionId)
+                                            .in(DiaryEmotion::getDiaryId, diaryIds)
+                            )
+                            .stream()
+                            .map(DiaryEmotion::getDiaryId)
+                            .toList()
+            );
+
+            diaries = diaries.stream()
+                    .filter(diary -> matchingDiaryIds.contains(diary.getId()))
+                    .toList();
+
+            if (diaries.isEmpty()) {
+                return new RandomMemoryVO();
+            }
+        }
+
+        Set<Long> excluded = new HashSet<>();
+        if (excludeIds != null) {
+            for (Long id : excludeIds) {
+                if (id != null && id > 0) {
+                    excluded.add(id);
+                }
+            }
+        }
+
+        List<Diary> unseen = diaries.stream()
+                .filter(diary -> !excluded.contains(diary.getId()))
+                .toList();
+
+        boolean poolReset = false;
+        if (unseen.isEmpty() && !excluded.isEmpty()) {
+            unseen = diaries;
+            poolReset = true;
+        }
+
+        if (unseen.isEmpty()) {
+            return new RandomMemoryVO();
+        }
+
+        Diary selected = unseen.get(
+                ThreadLocalRandom.current().nextInt(unseen.size())
+        );
+
+        RandomMemoryVO result = new RandomMemoryVO();
+        result.setDiary(toVO(userId, selected));
+        result.setPoolReset(poolReset);
+        result.setRemaining(Math.max(0, unseen.size() - 1));
+        return result;
     }
 
     @Override

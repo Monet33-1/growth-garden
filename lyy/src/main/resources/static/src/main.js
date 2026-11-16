@@ -1,11 +1,14 @@
-import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=26';
-import { clearSession, getToken, saveSession } from './session.js?v=26';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getRandomMemory, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=28';
+import { clearSession, getToken, saveSession } from './session.js?v=28';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
 let homeDiaries = [];
 let homeDiaryListLoaded = false;
 let accountUpdateDispose = null;
+const randomSeenDiaryIds = new Set();
+let randomEmotionId = null;
+let randomEmotionOptions = null;
 
 function navigate(route) {
   window.history.pushState({}, '', route);
@@ -633,6 +636,99 @@ function openDiaryEditor() {
   };
 }
 
+async function loadRandomEmotionOptions() {
+  if (randomEmotionOptions) return randomEmotionOptions;
+
+  const select = document.getElementById('random-emotion-filter');
+  try {
+    randomEmotionOptions = await getEmotions();
+  } catch {
+    randomEmotionOptions = [];
+  }
+
+  if (select) {
+    select.innerHTML = '<option value="">全部情绪</option>' + randomEmotionOptions
+      .map((emotion) => `<option value="${escapeHtml(emotion.id)}">${escapeHtml(emotion.name || '未命名')}</option>`)
+      .join('');
+  }
+  return randomEmotionOptions;
+}
+
+async function openRandomMemory() {
+  const dialog = document.getElementById('random-memory-dialog');
+  const title = document.getElementById('random-memory-title');
+  const date = document.getElementById('random-memory-date');
+  const content = document.getElementById('random-memory-content');
+  const emotions = document.getElementById('random-memory-emotions');
+  const message = document.getElementById('random-memory-message');
+  const remaining = document.getElementById('random-memory-remaining');
+  const again = document.getElementById('random-memory-again');
+  const trigger = document.getElementById('random-memory');
+  if (!dialog || !title || !content) return;
+
+  trigger.disabled = true;
+  again.disabled = true;
+  message.textContent = '正在星子里找一张旧纸条…';
+  title.textContent = '从过去抽一张纸条';
+  date.textContent = '';
+  content.textContent = '';
+  emotions.innerHTML = '';
+  remaining.textContent = '';
+
+  try {
+    await loadRandomEmotionOptions();
+    const result = await getRandomMemory([...randomSeenDiaryIds], randomEmotionId);
+    const diary = result?.diary;
+
+    if (!diary) {
+      title.textContent = '还没有可以抽取的回忆';
+      content.textContent = randomEmotionId
+        ? '这个情绪瓶里还没有旧纸条，换一个情绪或先写一篇吧。'
+        : '先写下第一篇随笔，之后就能回来随机翻看了。';
+      message.textContent = '';
+      remaining.textContent = '';
+      again.disabled = true;
+      if (!dialog.open) dialog.showModal();
+      return;
+    }
+
+    if (result.poolReset) {
+      randomSeenDiaryIds.clear();
+      message.textContent = '这一轮已经翻完，又绕回最初的一批回忆了。';
+    } else {
+      message.textContent = '';
+    }
+    randomSeenDiaryIds.add(diary.id);
+
+    title.textContent = diary.title || '无题';
+    date.textContent = dateLabel(diary.createTime);
+    content.textContent = diary.content || '这篇随笔还没有写下内容。';
+    emotions.innerHTML = Array.isArray(diary.emotions)
+      ? diary.emotions.map((emotion) => `<span>${escapeHtml(emotion.name || '未命名')}</span>`).join('')
+      : '';
+    remaining.textContent = Number.isFinite(result.remaining) && result.remaining > 0
+      ? `还有 ${result.remaining} 篇没翻到`
+      : '这一轮只剩这一篇了';
+    again.disabled = false;
+
+    if (!dialog.open) dialog.showModal();
+  } catch (error) {
+    if (error instanceof ApiError && [401, 403].includes(error.status)) {
+      clearSession();
+      navigate('/user/login');
+      return;
+    }
+    title.textContent = '这次没有找到回忆';
+    content.textContent = '';
+    message.textContent = error instanceof TypeError
+      ? '花园暂时没有回应，请稍后再试。'
+      : error.message || '随机回忆暂时不可用，请稍后再试。';
+  } finally {
+    trigger.disabled = false;
+    again.disabled = false;
+  }
+}
+
 async function showHome() {
   const app = document.getElementById('app');
   app.dataset.view = 'home';
@@ -666,6 +762,11 @@ async function showHome() {
       <span class="home-jar__count" id="story-count">正在数故事…</span>
     </button>
 
+    <button class="home-random" id="random-memory" type="button">
+      <span class="home-random__spark" aria-hidden="true">✦</span>
+      <span>随机回忆</span>
+    </button>
+
     <p class="home-motto">在这个小小的花园里<br />种下你的故事，让时间帮你记住。</p>
     <p id="home-toast" class="home-toast" role="status" aria-live="polite"></p>
 
@@ -678,6 +779,27 @@ async function showHome() {
       <p class="diary-dialog__message" id="diary-dialog-message" role="status" aria-live="polite"></p>
       <div class="diary-dialog__actions">
         <button class="diary-dialog__delete" id="diary-dialog-delete" type="button">删除这篇随笔</button>
+      </div>
+    </dialog>
+
+    <dialog id="random-memory-dialog" class="diary-dialog random-memory-dialog">
+      <button class="diary-dialog__close" id="random-memory-close" type="button" aria-label="关闭">×</button>
+      <p class="diary-dialog__eyebrow">A MEMORY FROM YOUR GARDEN</p>
+      <h2 id="random-memory-title">从过去抽一张纸条</h2>
+      <time id="random-memory-date"></time>
+      <p id="random-memory-content" class="diary-dialog__content"></p>
+      <div class="random-memory__emotions" id="random-memory-emotions"></div>
+      <div class="random-memory__filter-wrap">
+        <label for="random-emotion-filter">只看这种情绪</label>
+        <select id="random-emotion-filter">
+          <option value="">全部情绪</option>
+        </select>
+        <span id="random-memory-remaining"></span>
+      </div>
+      <p class="diary-dialog__message" id="random-memory-message" role="status" aria-live="polite"></p>
+      <div class="random-memory__actions">
+        <button class="random-memory__close" id="random-memory-skip" type="button">先到这里</button>
+        <button class="random-memory__again" id="random-memory-again" type="button">再抽一篇 →</button>
       </div>
     </dialog>
 
@@ -766,6 +888,20 @@ async function showHome() {
   bindProfileMenu();
   document.getElementById('write-entry').addEventListener('click', () => {
     openDiaryEditor();
+  });
+
+  const randomDialog = document.getElementById('random-memory-dialog');
+  document.getElementById('random-memory').addEventListener('click', () => void openRandomMemory());
+  document.getElementById('random-memory-close').addEventListener('click', () => randomDialog.close());
+  document.getElementById('random-memory-skip').addEventListener('click', () => randomDialog.close());
+  document.getElementById('random-memory-again').addEventListener('click', () => void openRandomMemory());
+  randomDialog.addEventListener('click', (event) => {
+    if (event.target === randomDialog) randomDialog.close();
+  });
+  document.getElementById('random-emotion-filter').addEventListener('change', (event) => {
+    randomEmotionId = event.currentTarget.value || null;
+    randomSeenDiaryIds.clear();
+    void openRandomMemory();
   });
   try {
     const [gardenResult, diaryResult, letterResult] = await Promise.allSettled([

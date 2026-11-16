@@ -7,11 +7,17 @@ import com.grow.lyy.common.exception.BusinessException;
 import com.grow.lyy.diary.entity.Diary;
 import com.grow.lyy.diary.mapper.DiaryMapper;
 import com.grow.lyy.diary.vo.DiaryVO;
+import com.grow.lyy.diary.vo.RandomMemoryVO;
 import com.grow.lyy.emotion.mapper.DiaryEmotionMapper;
 import com.grow.lyy.emotion.service.EmotionService;
 import com.grow.lyy.letter.mapper.UserLetterMapper;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -59,6 +65,35 @@ class DiaryServiceImplTest {
         DiaryVO result = service.createDiary(1L, diary);
 
         assertTrue(result.isEmotionFallbackRequired());
+    }
+
+    @Test
+    void randomMemoryAvoidsSeenDiariesAndResetsAfterPoolIsExhausted() {
+        Diary first = new Diary();
+        first.setId(1L);
+        first.setUserId(1L);
+        first.setTitle("第一封");
+        first.setContent("第一篇");
+
+        Diary second = new Diary();
+        second.setId(2L);
+        second.setUserId(1L);
+        second.setTitle("第二封");
+        second.setContent("第二篇");
+
+        when(diaryMapper.selectList(any())).thenReturn(List.of(first, second));
+        when(emotionService.getDiaryEmotions(anyLong(), anyLong())).thenReturn(List.of());
+
+        RandomMemoryVO oneLeft = service.getRandomMemory(1L, List.of(1L), null);
+        assertNotNull(oneLeft.getDiary());
+        assertEquals(2L, oneLeft.getDiary().getId());
+        assertFalse(oneLeft.isPoolReset());
+        assertEquals(0, oneLeft.getRemaining());
+
+        RandomMemoryVO reset = service.getRandomMemory(1L, List.of(1L, 2L), null);
+        assertNotNull(reset.getDiary());
+        assertTrue(reset.isPoolReset());
+        assertEquals(1, reset.getRemaining());
     }
 
     @Test

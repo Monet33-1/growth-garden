@@ -1,4 +1,4 @@
-import { getToken } from './session.js?v=26';
+import { getToken } from './session.js?v=28';
 
 export class ApiError extends Error {
   constructor(message, status = 0) {
@@ -88,6 +88,15 @@ export async function getMyDiaries() {
   const result = await request('/diary/list');
   if (!Array.isArray(result?.data)) throw new ApiError(result?.message || '暂时无法读取随笔');
   return result.data;
+}
+
+export async function getRandomMemory(excludeIds = [], emotionId = null) {
+  const params = new URLSearchParams();
+  if (excludeIds.length) params.set('exclude', excludeIds.join(','));
+  if (emotionId != null) params.set('emotionId', String(emotionId));
+  const query = params.toString();
+  const result = await request(`/diary/random${query ? `?${query}` : ''}`);
+  return result?.data || { diary: null, poolReset: false, remaining: 0 };
 }
 
 export async function getEmotions() {
