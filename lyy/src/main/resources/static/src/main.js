@@ -1,5 +1,5 @@
-import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getRandomMemory, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=28';
-import { clearSession, getToken, saveSession } from './session.js?v=28';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getRandomMemory, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=29';
+import { clearSession, getToken, saveSession } from './session.js?v=29';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
@@ -247,6 +247,18 @@ function dateLabel(value) {
   const date = new Date(value);
   return Number.isNaN(date.getTime()) ? '一段慢慢发生的时光' : new Intl.DateTimeFormat('zh-CN').format(date);
 }
+
+function memoryDateLabel(value) {
+  return dateLabel(value).replaceAll('/', '-');
+}
+
+const EMOTION_EMOJI = {
+  '开心': '😊',
+  '平静': '🍃',
+  '孤独': '🌙',
+  '难过': '😢',
+  '感动': '💗',
+};
 
 function escapeHtml(value) {
   return String(value ?? '').replace(/[&<>"']/g, (character) => ({
@@ -701,10 +713,13 @@ async function openRandomMemory() {
     randomSeenDiaryIds.add(diary.id);
 
     title.textContent = diary.title || '无题';
-    date.textContent = dateLabel(diary.createTime);
+    date.textContent = memoryDateLabel(diary.createTime);
     content.textContent = diary.content || '这篇随笔还没有写下内容。';
     emotions.innerHTML = Array.isArray(diary.emotions)
-      ? diary.emotions.map((emotion) => `<span>${escapeHtml(emotion.name || '未命名')}</span>`).join('')
+      ? diary.emotions.map((emotion) => {
+        const name = emotion.name || '未命名';
+        return `<span><b aria-hidden="true">${EMOTION_EMOJI[name] || '✦'}</b>${escapeHtml(name)}</span>`;
+      }).join('')
       : '';
     remaining.textContent = Number.isFinite(result.remaining) && result.remaining > 0
       ? `还有 ${result.remaining} 篇没翻到`
@@ -764,7 +779,7 @@ async function showHome() {
 
     <button class="home-random" id="random-memory" type="button">
       <span class="home-random__spark" aria-hidden="true">✦</span>
-      <span>随机回忆</span>
+      <span class="home-random__label">随机回忆</span>
     </button>
 
     <p class="home-motto">在这个小小的花园里<br />种下你的故事，让时间帮你记住。</p>
@@ -782,24 +797,31 @@ async function showHome() {
       </div>
     </dialog>
 
-    <dialog id="random-memory-dialog" class="diary-dialog random-memory-dialog">
-      <button class="diary-dialog__close" id="random-memory-close" type="button" aria-label="关闭">×</button>
-      <p class="diary-dialog__eyebrow">A MEMORY FROM YOUR GARDEN</p>
-      <h2 id="random-memory-title">从过去抽一张纸条</h2>
-      <time id="random-memory-date"></time>
-      <p id="random-memory-content" class="diary-dialog__content"></p>
-      <div class="random-memory__emotions" id="random-memory-emotions"></div>
-      <div class="random-memory__filter-wrap">
-        <label for="random-emotion-filter">只看这种情绪</label>
-        <select id="random-emotion-filter">
-          <option value="">全部情绪</option>
-        </select>
-        <span id="random-memory-remaining"></span>
+    <dialog id="random-memory-dialog" class="random-memory-dialog">
+      <button class="random-memory__close-button" id="random-memory-close" type="button" aria-label="关闭">×</button>
+      <p class="random-memory__eyebrow">A MEMORY FROM YOUR GARDEN</p>
+      <h2 class="random-memory__title" id="random-memory-title">从过去抽一张纸条</h2>
+      <div class="random-memory__date">
+        <span aria-hidden="true">▣</span>
+        <time id="random-memory-date"></time>
       </div>
-      <p class="diary-dialog__message" id="random-memory-message" role="status" aria-live="polite"></p>
-      <div class="random-memory__actions">
-        <button class="random-memory__close" id="random-memory-skip" type="button">先到这里</button>
-        <button class="random-memory__again" id="random-memory-again" type="button">再抽一篇 →</button>
+      <div class="random-memory__paper">
+        <p id="random-memory-content" class="random-memory__content"></p>
+      </div>
+      <div class="random-memory__emotions" id="random-memory-emotions"></div>
+      <p class="random-memory__message" id="random-memory-message" role="status" aria-live="polite"></p>
+      <div class="random-memory__bottom">
+        <div class="random-memory__filter-wrap">
+          <span class="random-memory__filter-icon" aria-hidden="true">▦</span>
+          <select id="random-emotion-filter" aria-label="按情绪筛选回忆">
+            <option value="">全部情绪</option>
+          </select>
+          <span class="random-memory__remaining" id="random-memory-remaining"></span>
+        </div>
+        <div class="random-memory__actions">
+          <button class="random-memory__close" id="random-memory-skip" type="button">先到这里</button>
+          <button class="random-memory__again" id="random-memory-again" type="button">再抽一篇 →</button>
+        </div>
       </div>
     </dialog>
 
