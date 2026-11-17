@@ -1,4 +1,4 @@
-import { getToken } from './session.js?v=29';
+import { getToken } from './session.js?v=30';
 
 export class ApiError extends Error {
   constructor(message, status = 0) {

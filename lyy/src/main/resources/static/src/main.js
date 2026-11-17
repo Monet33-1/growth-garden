@@ -1,5 +1,5 @@
-import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getRandomMemory, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=29';
-import { clearSession, getToken, saveSession } from './session.js?v=29';
+import { addDiaryEmotion, ApiError, changePassword, completeLetter, createAdminLetter, createDiary, deleteAdminLetter, deleteDiary, getAdminLetters, getAiKeyStatus, getEmotions, getGardenInfo, getLetterDetail, getMyDiaries, getMyLetters, getRandomMemory, getSetupStatus, login, loginAdmin, setupAccount, updateAdminLetter, updateAdminLetterSort, updateAiKey } from './api.js?v=30';
+import { clearSession, getToken, saveSession } from './session.js?v=30';
 
 const MAX_STARS = 30;
 const page = document.getElementById('page');
@@ -777,9 +777,8 @@ async function showHome() {
       <span class="home-jar__count" id="story-count">正在数故事…</span>
     </button>
 
-    <button class="home-random" id="random-memory" type="button">
-      <span class="home-random__spark" aria-hidden="true">✦</span>
-      <span class="home-random__label">随机回忆</span>
+    <button class="home-random" id="random-memory" type="button" aria-label="随机回忆">
+      <img class="home-random__image" src="/images/random-memory-button.png" alt="" draggable="false" />
     </button>
 
     <p class="home-motto">在这个小小的花园里<br />种下你的故事，让时间帮你记住。</p>
